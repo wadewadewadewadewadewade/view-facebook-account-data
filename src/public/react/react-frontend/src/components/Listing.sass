@@ -1,0 +1,13 @@
+ul
+  li
+    display: flex
+    flex-direction: column
+    label
+      display: flex
+      flex-direction: row
+    input
+      display: none
+      &:checked ~ ul
+        display: flex
+    ul
+      display: none
