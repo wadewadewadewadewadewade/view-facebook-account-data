@@ -10,7 +10,7 @@ interface ArchiveItem {
     version: number
     flags: number
     method: number
-    time: Date
+    time: number // ticks
     crc: number
     compressedSize: number
     size: number
@@ -24,7 +24,7 @@ interface ArchiveItem {
     headerOffset: number
     name: string
     isDirectory: Boolean
-    comment: SVGFESpecularLightingElement
+    comment: string
 }
 interface ArchiveItems {
     [filenameAndPath: string]: ArchiveItem
