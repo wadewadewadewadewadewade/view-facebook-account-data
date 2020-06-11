@@ -1,23 +1,14 @@
-import React, { useState, Suspense } from "react";
-import { getListing, Listing, wrapPromise, dummyListing } from './components/Listing';
+import React from "react";
 import logo from './logo.svg';
 import './App.css';
 
-//const initialResource = wrapPromise(getListing())
-const initialResource = wrapPromise(dummyListing)
+import { ListingComponent } from './components/Listing';
 
 function App() {
-  const [resource] = useState(
-    initialResource
-  );
   return (
     <div className="App">
-      <Suspense fallback={
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Loading...
-          </p>
           <a
             className="App-link"
             href="https://reactjs.org"
@@ -27,9 +18,7 @@ function App() {
             Learn React
           </a>
         </header>
-      }>
-        <Listing {...resource} />
-      </Suspense>
+        <ListingComponent />
     </div>
   );
 

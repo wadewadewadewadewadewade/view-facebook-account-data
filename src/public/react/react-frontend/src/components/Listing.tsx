@@ -1,19 +1,18 @@
-import React from 'react';
+import React, { Suspense, useState } from 'react';
 import ReactDOM from 'react-dom';
-import ReactHtmlParser from 'react-html-parser'
 import './Listing.sass';
 
-interface WrappedPromise {
-  read(): ArchiveItems | undefined
+interface WrappedPromise<T> {
+  read(): T
 }
 
-export function wrapPromise(promise: Promise<ArchiveItems>): WrappedPromise {
+export function wrapPromise<T>(promise: Promise<T>): WrappedPromise<T> {
   let status = "pending";
-  let result: ArchiveItems;
+  let result: T;
   let suspender = promise.then(
     r => {
       status = "success";
-      result = r;
+			result = r;
     },
     e => {
       status = "error";
@@ -21,14 +20,16 @@ export function wrapPromise(promise: Promise<ArchiveItems>): WrappedPromise {
     }
   );
   return {
-    read() {
+    read<T>() {
       if (status === "pending") {
         throw suspender;
       } else if (status === "error") {
         throw result;
       } else if (status === "success") {
         return result;
-      }
+      } else {
+				throw suspender;
+			}
     }
   };
 }
@@ -54,7 +55,7 @@ interface ArchiveItem {
   isDirectory: Boolean
   comment: string | null
 }
-export interface ArchiveItems {
+interface ArchiveItems {
   [filenameAndPath: string]: ArchiveItem
 }
 
@@ -73,21 +74,21 @@ class File {
 		if (this.data) {
 			callback(this.data)
 		} else {
-			dummyFile.then(file => {
+			new Promise<string>(r => r(dummyImageFile)).then((base64: string) => {
 				this.data = document.createElement('img')
-				this.data.src = file
+				this.data.src = base64
 				callback(this.data)
 			})
 		}
 	}
 	click(event: React.MouseEvent<HTMLLIElement, MouseEvent>) {
-		const ref = (event.target as HTMLLIElement)
+		/*const li = (event.target as HTMLLIElement),
+			fullName = li.dataset.resource*/
 		if (this.portal.children.length === 0) {
-			this.fetch((data: any) => this.portal.appendChild(data))
+			this.fetch((data: HTMLImageElement) => this.portal.appendChild(data))
 		} else {
 			this.portal.children[0].remove()
 		}
-
 	}
 }
 
@@ -124,6 +125,19 @@ class Directory {
       return this.directory.find(file => file.name === name)
     }
 	}
+	find(path: Array<string> | undefined): Directory | undefined { // just to get directory, not file, for use only after structure is constructed
+		if (path === undefined) {
+			return undefined
+		}
+		//let current = (listing?.read().structure.get('') as Directory | undefined),
+		let current = (this.get('') as Directory | undefined),
+			level = 0
+		while (current !== undefined && current.name !== path[path.length - 1]) {
+			level++
+			current = (current.get(path[level]) as Directory | undefined)
+		}
+		return current
+	}
 	getPath(): string {
 		let name = this.name,
 			current = this.parent
@@ -143,7 +157,7 @@ class Directory {
     }
     if (this.files) {
       for(let i=0;i<this.files.length;i++) {
-        html.push(<li key={this.files[i].fullName} onClick={this.files[i].click}>{this.files[i].name}{ReactDOM.createPortal(undefined,this.files[i].portal)}</li>)
+        html.push(<li key={this.files[i].fullName} data-resource={this.files[i].fullName} onClick={this.files[i].click}>{this.files[i].name}{ReactDOM.createPortal(undefined,this.files[i].portal)}</li>)
       }
     }
     return html
@@ -163,7 +177,7 @@ export async function http<T>(
   return response;
 }
 
-function getFile(filename: string) {
+/*function getFile(filename: string) {
 	return new Promise<ArchiveItems>(resolve => {
     fetch('/api/archive/' + encodeURIComponent(filename))
     .then(res => resolve(res.json()))
@@ -171,48 +185,58 @@ function getFile(filename: string) {
 }
 
 export function getListing() {
-  /*return http<ArchiveItems>('/api/archive')
-    .then(res => res.json())*/
+  //return http<ArchiveItems>('/api/archive')
+  //  .then(res => res.json())
   return new Promise<ArchiveItems>(resolve => {
     fetch('/api/archive')
     .then(res => resolve(res.json()))
   })
-}
+}*/
 
-export function Listing(resource: WrappedPromise) {
-  if (resource) {
-    const listing: ArchiveItems | undefined = resource.read()
-    let structure = new Directory('', undefined)
-    if (listing !== undefined) {
-      Object.keys(listing).forEach((fullName) => {
-        const path = fullName.split('/'),
+export class Listing {
+	structure: Directory = new Directory('', undefined)
+	constructor(listing: ArchiveItems | undefined) {
+		if (listing !== undefined) {
+			Object.keys(listing).forEach((fullName) => {
+				const path = fullName.split('/'),
 					isDirectory = listing[fullName].isDirectory
-        if (!isDirectory) { // path never ends with a slash in this case
-          let level = 0,
-            name = (path.pop() as string), // force to never be undefined, so we have to assume path array is at least length 1 before here
-            current = structure
-          while (level < path.length) {
+				if (!isDirectory) { // path never ends with a slash in this case
+					let level = 0,
+						current = this.structure
+					path.pop() // We just want path[] to have the directories in it, not the filename as well
+					while (level < path.length) {
 						const directory = path[level]
 						const temp = (current.get(directory) as Directory | undefined)
-            if (temp === undefined) { 
+						if (temp === undefined) { 
 							current = (current.set(new Directory(directory, current)) as Directory) // we're assuming response is never null or type=File here, and it shouldn't be
 						} else {
 							current = temp
 						}
 						level++
-          }
-          current.set(new File(fullName))
-        }
-      })
+					}
+					current.set(new File(fullName))
+				}
+			})
 		}
-    return <ul className="listing">{structure.render()}</ul>
-  } else {
-    return null
-  }
+	}
+	render() {
+		return <ul className="listing">{this.structure.render()}</ul>
+	}
 }
 
-const dummyFile = new Promise<string>(resolve => resolve(
-	'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gv4SUNDX1BST0ZJTEUAAQEAAAvoAAAAAAIAAABtbnRyUkdCIFhZWiAH2QADABsAFQAkAB9hY3NwAAAAAAAAAAAAAAAAAAAAAAAA'
+export function ListingComponent() {
+	const [archiveitems] = useState(wrapPromise(new Promise<ArchiveItems>(r => dummyArchiveItems)))
+	function ListingComponentRenderer(ai: WrappedPromise<ArchiveItems>) {
+		if (ai) {
+			return new Listing(ai.read()).render()
+		} else {
+			return null
+		}
+	}
+	return <Suspense fallback={<p className="loading">Loading...</p>}><ListingComponentRenderer {...archiveitems} /></Suspense>
+}
+
+const dummyImageFile =  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gv4SUNDX1BST0ZJTEUAAQEAAAvoAAAAAAIAAABtbnRyUkdCIFhZWiAH2QADABsAFQAkAB9hY3NwAAAAAAAAAAAAAAAAAAAAAAAA'
 	+ 'AAEAAAAAAAAAAAAA9tYAAQAAAADTLQAAAAAp+D3er/JVrnhC+uTKgzkNAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBkZXNjAAABRAAAAHliWFlaAAABwAAAABRiVFJDAAAB1AAACAxkbWRkAAAJ4AAA'
 	+ 'AIhnWFlaAAAKaAAAABRnVFJDAAAB1AAACAxsdW1pAAAKfAAAABRtZWFzAAAKkAAAACRia3B0AAAKtAAAABRyWFlaAAAKyAAAABRyVFJDAAAB1AAACAx0ZWNoAAAK3AAAAAx2dWVkAAAK6AAAAId3dHB0AAALcAAA'
 	+'ABRjcHJ0AAALhAAAADdjaGFkAAALvAAAACxkZXNjAAAAAAAAAB9zUkdCIElFQzYxOTY2LTItMSBibGFjayBzY2FsZWQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -288,8 +312,8 @@ const dummyFile = new Promise<string>(resolve => resolve(
 	+'vHX+rQax0TrCi4tyRdbLSMONzqjKrEjzywc/IVhmpxXNugEscY3cE9sVgeqx+aOi9MU/a6M70L9QfnTDo/6g16vVow6MufYcs/1g/q0Rj/ABv/AFq9XqtP9LAvtCbefyp/9JTZ0z/2Wter1ZsOzr/9U3P2LfzQP+m'
 	+'m/sino/gX5mvV6ug+jitT+Q7k/Wr8/wC8Uq+0j9RY/wC//YavV6oh2CFfqv8Amxov+r/84oT0x/NHrT/VE/4b16vU5D9P9kLsZfbL/wBzK/17H/jxUn6j+s63/wBsR/2Vr1eqdN1/f/UUfYa9qv8APXpn+p/8i3pq'
 	+'6+/nD0x/tL/2nr1eoMuohIdsyyX+Q2f+hH8DS/1L/Jo/61er1ct6j+Q7nR/hR//Z'
-))
-export const dummyListing = new Promise<ArchiveItems>(resolve => resolve({
+
+const dummyArchiveItems: ArchiveItems = {
 	"photos_and_videos/": {
 		"verMade": 831,
 		"version": 20,
@@ -352,7 +376,7 @@ export const dummyListing = new Promise<ArchiveItems>(resolve => resolve({
 		"name": "photos_and_videos/ProfilePictures_I93BR2Hndw/47960_422101603950_3437089_n_422101603950.jpg",
 		"isDirectory": false,
 		"comment": null
-	}/*,
+	},
 	"photos_and_videos/ProfilePictures_I93BR2Hndw/552255_10151104974518951_534253465_n_10151104974518951.jpg": {
 		"verMade": 831,
 		"version": 20,
@@ -31117,5 +31141,5 @@ export const dummyListing = new Promise<ArchiveItems>(resolve => resolve({
 		"name": "facebook_gaming/no-data.txt",
 		"isDirectory": false,
 		"comment": null
-	}*/
-}))
+	}
+}
