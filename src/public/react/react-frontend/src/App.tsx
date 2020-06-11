@@ -1,10 +1,10 @@
 import React, { useState, Suspense } from "react";
-import { getListing, Listing, wrapPromise, dummydata } from './components/Listing';
+import { getListing, Listing, wrapPromise, dummyListing } from './components/Listing';
 import logo from './logo.svg';
 import './App.css';
 
 //const initialResource = wrapPromise(getListing())
-const initialResource = wrapPromise(dummydata)
+const initialResource = wrapPromise(dummyListing)
 
 function App() {
   const [resource] = useState(
