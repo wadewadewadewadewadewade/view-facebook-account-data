@@ -1,24 +1,22 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import logo from './logo.svg';
 import './App.css';
+import { BrowserRouter as Router, Route, Link } from "react-router-dom";
 
-import { ListingComponent } from './components/Listing';
+const ListingComponent = lazy(() => import('./components/Listing'));
 
 function App() {
   return (
     <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-        <ListingComponent />
+      <Router>
+        <Link to="/">Home</Link>
+        <Suspense fallback={
+          <header className="App-header">
+            <img src={logo} className="App-logo" alt="logo" />
+          </header>}>
+          <Route exact path="/" component={ListingComponent} />
+        </Suspense>
+      </Router>
     </div>
   );
 
