@@ -128,7 +128,8 @@ class Directory {
     }
     if (this.files) {
       for(let i=0;i<this.files.length;i++) {
-        html.push(<li key={this.files[i].fullName} data-resource={this.files[i].fullName} onClick={this.files[i].click}>{this.files[i].name}{ReactDOM.createPortal(undefined,this.files[i].portal)}</li>)
+				const file = this.files[i]
+        html.push(<li key={file.fullName} data-resource={file.fullName} onClick={(e) => file.click(e)}>{file.name}{ReactDOM.createPortal(undefined,file.portal)}</li>)
       }
     }
     return html
@@ -167,7 +168,6 @@ export function getListing() {
 export class Listing {
 	structure: Directory = new Directory('', undefined)
 	constructor(listing: ArchiveItems) {
-		console.log('here')
 		Object.keys(listing).forEach((fullName) => {
 			const path = fullName.split('/'),
 				isDirectory = listing[fullName].isDirectory
