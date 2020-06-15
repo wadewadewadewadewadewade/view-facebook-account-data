@@ -24,7 +24,7 @@ interface ArchiveItem {
   name: string
   isDirectory: Boolean
 	comment: string | null
-	display: Boolean
+	display?: Boolean
 }
 export interface ArchiveItems {
   [filenameAndPath: string]: ArchiveItem
@@ -208,7 +208,7 @@ export class Listing {
 		})
 	}
 	render(items: WrappedPromise<ArchiveItems>, update: React.Dispatch<React.SetStateAction<WrappedPromise<ArchiveItems>>>) {
-		return <ul className="listing">{this.structure.render(items, update)}</ul>
+		return <ul key="/" className="listing">{this.structure.render(items, update)}</ul>
 	}
 }
 
