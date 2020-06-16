@@ -78,7 +78,7 @@ export const dummyImageFile =  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIA
 	+'6+/nD0x/tL/2nr1eoMuohIdsyyX+Q2f+hH8DS/1L/Jo/61er1ct6j+Q7nR/hR//Z'
 
 export const dummyArchiveItems: ArchiveItems = {
-	"photos_and_videos/": {
+	/*"photos_and_videos/": {
 		"verMade": 831,
 		"version": 20,
 		"flags": 0,
@@ -119,7 +119,7 @@ export const dummyArchiveItems: ArchiveItems = {
 		"name": "photos_and_videos/ProfilePictures_I93BR2Hndw/",
 		"isDirectory": true,
 		"comment": null
-	},
+	},*/
 	"photos_and_videos/ProfilePictures_I93BR2Hndw/47960_422101603950_3437089_n_422101603950.jpg": {
 		"verMade": 831,
 		"version": 20,
@@ -140,7 +140,7 @@ export const dummyArchiveItems: ArchiveItems = {
 		"name": "photos_and_videos/ProfilePictures_I93BR2Hndw/47960_422101603950_3437089_n_422101603950.jpg",
 		"isDirectory": false,
 		"comment": null
-	},
+	}/*,
 	"photos_and_videos/ProfilePictures_I93BR2Hndw/552255_10151104974518951_534253465_n_10151104974518951.jpg": {
 		"verMade": 831,
 		"version": 20,
@@ -30905,5 +30905,5 @@ export const dummyArchiveItems: ArchiveItems = {
 		"name": "facebook_gaming/no-data.txt",
 		"isDirectory": false,
 		"comment": null
-	}
+	}*/
 }

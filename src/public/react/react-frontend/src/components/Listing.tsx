@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import ReactDOM from 'react-dom';
 import './Listing.sass';
 
 import { WrappedPromise, wrapPromise } from './WrapPromise'
@@ -24,10 +23,17 @@ interface ArchiveItem {
   headerOffset: number
   name: string
   isDirectory: Boolean
-  comment: string | null
+	comment: string | null
+	display?: Boolean
 }
 export interface ArchiveItems {
   [filenameAndPath: string]: ArchiveItem
+}
+
+interface FileArgs {
+	file: File,
+	items: WrappedPromise<ArchiveItems>,
+	update: React.Dispatch<React.SetStateAction<WrappedPromise<ArchiveItems>>>
 }
 
 class File {
@@ -72,6 +78,9 @@ class File {
 			this.portal.children[0].remove()
 			this.setDisplay((currentState: Boolean) => { return !currentState })
 		}
+	}
+	render(items: WrappedPromise<ArchiveItems>, update: React.Dispatch<React.SetStateAction<WrappedPromise<ArchiveItems>>>): JSX.Element {
+		return <li key={this.fullName} onClick={(e) => this.click(e)}><span>{this.name}</span>{this.data}</li>
 	}
 }
 
@@ -130,18 +139,20 @@ class Directory {
 		}
 		return name
 	}
-  render(): Array<JSX.Element> {
-    let html: Array<JSX.Element> = [];
+  render(items: WrappedPromise<ArchiveItems>, update: React.Dispatch<React.SetStateAction<WrappedPromise<ArchiveItems>>>): Array<JSX.Element> {
+		let html: Array<JSX.Element> = [];
     if (this.directory) {
       for(let i=0;i<this.directory.length;i++) {
         const id = this.directory[i].getPath();
-        html.push(<li key={id}><input type="checkbox" id={id}/><label htmlFor={id}>{this.directory[i].name}</label><ul>{this.directory[i].render()}</ul></li>)
+        html.push(<li key={id}><input type="checkbox" id={id}/><label htmlFor={id}>{this.directory[i].name}</label><ul>{this.directory[i].render(items, update)}</ul></li>)
       }
-    }
+		}
+		function FileComponent(args: FileArgs) {
+			return args.file.render(items, update)
+		}
     if (this.files) {
       for(let i=0;i<this.files.length;i++) {
-				const file = this.files[i]
-        html.push(<li key={file.fullName} data-resource={file.fullName} onClick={(e) => file.click(e)}>{file.name}{ReactDOM.createPortal(undefined,file.portal)}</li>)
+        html.push(<FileComponent {...{ file: this.files[i], items, update}}/>)
       }
     }
     return html
@@ -201,16 +212,16 @@ export class Listing {
 			}
 		})
 	}
-	render() {
-		return <ul className="listing">{this.structure.render()}</ul>
+	render(items: WrappedPromise<ArchiveItems>, update: React.Dispatch<React.SetStateAction<WrappedPromise<ArchiveItems>>>) {
+		return <ul key="/" className="listing">{this.structure.render(items, update)}</ul>
 	}
 }
 
 export default function ListingComponent() {
-	const [archiveitems] = useState(wrapPromise(new Promise<ArchiveItems>(r => { setTimeout(()=> r(dummyArchiveItems), 1000)})))
+	const [archiveitems, fileClick] = useState(wrapPromise(new Promise<ArchiveItems>(r => { setTimeout(()=> r(dummyArchiveItems), 1000)})))
 	function ListingComponentRenderer(ai: WrappedPromise<ArchiveItems>) {
 		const listing = new Listing(ai.read())
-		return listing.render()
+		return listing.render(archiveitems, fileClick)
 	}
 	return <ListingComponentRenderer {...archiveitems} />
 }
