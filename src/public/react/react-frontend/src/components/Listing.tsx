@@ -34,31 +34,43 @@ class File {
   name: string;
 	fullName: string;
 	portal: HTMLSpanElement
-	data: any
+	data: HTMLImageElement | undefined
+	display: Boolean
+	setDisplay: Function
 	constructor(fullName: string) {
 		const path = fullName.split('/')
 		this.fullName = fullName
 		this.name = path[path.length - 1]
-		this.portal = document.createElement('span')
+		this.portal = document.createElement('span');
+		[this.display, this.setDisplay] = useState(false)
 	}
-	fetch(callback: Function) {
+	fetch(): Promise<string> {
 		if (this.data) {
-			callback(this.data)
+			return new Promise<string>(r => r(this.data?.src))
 		} else {
-			new Promise<string>(r => r(dummyImageFile)).then((base64: string) => {
-				this.data = document.createElement('img')
-				this.data.src = base64
-				callback(this.data)
+			return new Promise<string>(ro => {
+				new Promise<string>(r => r(dummyImageFile)).then((base64: string) => {
+					this.data = document.createElement('img')
+					this.data.src = base64
+					ro(this.data.src)
+				})
 			})
 		}
 	}
 	click(event: React.MouseEvent<HTMLLIElement, MouseEvent>) {
-		/*const li = (event.target as HTMLLIElement),
-			fullName = li.dataset.resource*/
-		if (this.portal.children.length === 0) {
-			this.fetch((data: HTMLImageElement) => this.portal.appendChild(data))
+		if (!this.display) {
+			if (this.data) {
+				this.portal.appendChild(this.data)
+				this.setDisplay((currentState: Boolean) => { return !currentState })
+			} else {
+				this.fetch().then(() => {
+					this.portal.appendChild(this.data as Node)
+					this.setDisplay((currentState: Boolean) => { return !currentState })
+				})
+			}
 		} else {
 			this.portal.children[0].remove()
+			this.setDisplay((currentState: Boolean) => { return !currentState })
 		}
 	}
 }
