@@ -79,7 +79,7 @@ class File {
 			this.setDisplay((currentState: Boolean) => { return !currentState })
 		}
 	}
-	render(items: WrappedPromise<ArchiveItems>, update: React.Dispatch<React.SetStateAction<WrappedPromise<ArchiveItems>>>): JSX.Element {
+	render(): JSX.Element {
 		return <li key={this.fullName} onClick={(e) => this.click(e)}><span>{this.name}</span>{this.data}</li>
 	}
 }
@@ -139,20 +139,17 @@ class Directory {
 		}
 		return name
 	}
-  render(items: WrappedPromise<ArchiveItems>, update: React.Dispatch<React.SetStateAction<WrappedPromise<ArchiveItems>>>): Array<JSX.Element> {
+  render(): Array<JSX.Element> {
 		let html: Array<JSX.Element> = [];
     if (this.directory) {
       for(let i=0;i<this.directory.length;i++) {
         const id = this.directory[i].getPath();
-        html.push(<li key={id}><input type="checkbox" id={id}/><label htmlFor={id}>{this.directory[i].name}</label><ul>{this.directory[i].render(items, update)}</ul></li>)
+        html.push(<li key={id}><input type="checkbox" id={id}/><label htmlFor={id}>{this.directory[i].name}</label><ul>{this.directory[i].render()}</ul></li>)
       }
-		}
-		function FileComponent(args: FileArgs) {
-			return args.file.render(items, update)
 		}
     if (this.files) {
       for(let i=0;i<this.files.length;i++) {
-        html.push(<FileComponent {...{ file: this.files[i], items, update}}/>)
+        html.push(this.files[i].render())
       }
     }
     return html
@@ -212,16 +209,16 @@ export class Listing {
 			}
 		})
 	}
-	render(items: WrappedPromise<ArchiveItems>, update: React.Dispatch<React.SetStateAction<WrappedPromise<ArchiveItems>>>) {
-		return <ul key="/" className="listing">{this.structure.render(items, update)}</ul>
+	render() {
+		return <ul key="/" className="listing">{this.structure.render()}</ul>
 	}
 }
 
 export default function ListingComponent() {
-	const [archiveitems, fileClick] = useState(wrapPromise(new Promise<ArchiveItems>(r => { setTimeout(()=> r(dummyArchiveItems), 1000)})))
+	const [archiveitems] = useState(wrapPromise(new Promise<ArchiveItems>(r => { setTimeout(()=> r(dummyArchiveItems), 1000)})))
 	function ListingComponentRenderer(ai: WrappedPromise<ArchiveItems>) {
 		const listing = new Listing(ai.read())
-		return listing.render(archiveitems, fileClick)
+		return listing.render()
 	}
 	return <ListingComponentRenderer {...archiveitems} />
 }
